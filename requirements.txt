@@ -1,3 +1,2 @@
-# Dependencies for data engineering ethics compliance analyzer
-# AST is part of the Python standard library, but list here for clarity
-ast
+# Runtime dependencies
+# No external runtime dependencies are currently required.

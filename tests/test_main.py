@@ -1,7 +1,11 @@
 """Basic tests for the ethics compliance analyzer."""
 
 import os
-import tempfile
+import sys
+
+# Ensure project root is importable when tests are executed from isolated runners.
+sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
+
 from main import main
 
 
@@ -12,7 +16,6 @@ def test_analysis(tmp_path, capsys):
 
     main_args = [str(file)]
     # monkeypatch sys.argv
-    import sys
     sys_argv = sys.argv
     sys.argv = [sys.argv[0]] + main_args
     try:

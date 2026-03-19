@@ -9,7 +9,7 @@ import ast
 def load_rules():
     """Dynamically import all rule modules in the rules package."""
     rules = []
-    package = __name__
+    package = __package__ or "rules"
     package_path = os.path.dirname(__file__)
     for finder, name, ispkg in pkgutil.iter_modules([package_path]):
         if name.startswith("rule_"):
