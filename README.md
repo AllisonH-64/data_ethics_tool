@@ -26,3 +26,71 @@ This project helps developers, educators, and organizations ensure that their co
 git clone https://github.com/AllisonH-64/data_ethics_tool.git
 cd data_ethics_tool
 pip install -r requirements.txt
+```
+
+---
+
+## 🛠️ Usage
+
+Analyze a single file:
+```bash
+python main.py path/to/your_file.py
+```
+
+Analyze an entire directory:
+```bash
+python main.py path/to/your_project/
+```
+
+Save the report to a file:
+```bash
+python main.py path/to/your_project/ --output report.txt
+```
+
+---
+
+## 📁 Project Structure
+
+```
+data_ethics_tool/
+├── main.py                  # Entry point — CLI argument parsing and execution
+├── reporter.py              # Report generation logic
+├── requirements.txt         # Python dependencies
+├── TERMS_AND_CONDITIONS.md  # Usage terms and conditions
+├── rules/
+│   ├── __init__.py
+│   ├── loader.py            # Rule loading and application engine
+│   └── rule_example.py      # Example custom rule
+└── tests/
+    └── test_main.py         # Unit tests
+```
+
+---
+
+## 🧪 Running Tests
+
+```bash
+python -m pytest tests/
+```
+
+---
+
+## 📋 Terms and Conditions
+
+Use of this tool is subject to the [Terms and Conditions](TERMS_AND_CONDITIONS.md).
+
+---
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create a feature branch: `git checkout -b feature/your-feature`
+3. Commit your changes: `git commit -m "Add your feature"`
+4. Push to your branch: `git push origin feature/your-feature`
+5. Open a Pull Request
+
+---
+
+## 📄 License
+
+This project is open source. See repository settings for license details.
