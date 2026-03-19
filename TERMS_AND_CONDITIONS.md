@@ -48,5 +48,18 @@ Access to the Tool may be suspended or terminated at any time for misuse, securi
 ## 12. Governing Law
 These terms are governed by applicable local laws in the jurisdiction where the Tool is operated, unless otherwise required by binding law.
 
-## 13. Contact
-For questions about these Terms and Conditions, contact the project maintainer.
+## 13. Problem Reporting & Resolution
+If you encounter an issue with the Tool, follow these steps:
+
+1. **Identify the problem** — Note the exact action taken, the input used, and the output or error received.
+2. **Check documentation** — Review the project README and any known issue logs before reporting.
+3. **Report the issue** — Open a GitHub Issue in the project repository (if applicable), or email the project maintainer. Include:
+   - A clear description of the problem
+   - Steps to reproduce it
+   - Expected vs. actual behaviour
+   - Relevant error messages or screenshots
+4. **Workaround while waiting** — If the issue is blocking, try reverting to a prior version or bypassing the affected feature until a fix is available.
+5. **Resolution timeline** — Maintainers will acknowledge reports within 5 business days and provide a fix or status update where possible.
+
+## 14. Contact
+For questions about these Terms and Conditions or to report a problem, contact the project maintainer via the project repository or the designated support channel.
