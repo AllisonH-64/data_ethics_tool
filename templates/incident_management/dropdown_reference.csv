@@ -1,0 +1,21 @@
+field_name,allowed_values,notes
+reporter_type,Employee|Customer|Vendor,Select one
+data_lifecycle_area,Data Collection|Data Cleaning|Data Engineering,Select one
+internal_external,Internal|External,Select one
+primary_incident_domain,Governance and Compliance|Cybersecurity|Operational|Reputational,Select one only
+regulatory_exposure,Yes|No,Select one
+sensitive_data_involved,Yes|No,Select one
+customer_impact_suspected,Yes|No,Select one
+reviewer_department,Compliance|IT Security,Select one
+risk_level,Low|Medium|High,Select one
+owning_department,IT Security|HR|Legal|Compliance,Select one only
+evidence_preservation_completed,Yes|No,Select one
+internal_communication_required,Yes|No,Select one
+external_disclosure_required,Yes|No,Select one
+public_information_required_within_30_days,Yes|No,Select one
+containment_complete,Yes|No,Closure criterion
+corrective_complete,Yes|No,Closure criterion
+preventive_assigned,Yes|No,Closure criterion
+documentation_complete,Yes|No,Closure criterion
+final_risk_after_mitigation,Low|Medium|High,Select one
+preventive_measures,Policy update|Training|Technical control update|Monitoring enhancement,Allow multiple values separated by |
