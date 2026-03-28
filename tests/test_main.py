@@ -27,8 +27,10 @@ def test_analysis(tmp_path, capsys):
     sys_argv = sys.argv
     sys.argv = [sys.argv[0]] + main_args
     try:
-        main()
+        with pytest.raises(SystemExit) as exc:
+            main()
         captured = capsys.readouterr()
+        assert exc.value.code == 1
         assert "eval" in captured.out
     finally:
         sys.argv = sys_argv
@@ -78,7 +80,9 @@ def test_analysis_output_format(tmp_path, monkeypatch, capsys):
     """Output must include filename, line number, and message."""
     file = tmp_path / "check.py"
     file.write_text("eval('x')\n")
-    _run_main([str(file)], monkeypatch)
+    with pytest.raises(SystemExit) as exc:
+        _run_main([str(file)], monkeypatch)
+    assert exc.value.code == 1
     out = capsys.readouterr().out
     assert str(file) in out
     assert ":1:" in out
@@ -119,7 +123,9 @@ def test_directory_traversal(tmp_path, monkeypatch, capsys):
     sub.mkdir()
     (tmp_path / "a.py").write_text("eval('a')\n")
     (sub / "b.py").write_text("eval('b')\n")
-    _run_main([str(tmp_path)], monkeypatch)
+    with pytest.raises(SystemExit) as exc:
+        _run_main([str(tmp_path)], monkeypatch)
+    assert exc.value.code == 1
     out = capsys.readouterr().out
     assert "a.py" in out
     assert "b.py" in out
@@ -130,7 +136,9 @@ def test_output_to_file(tmp_path, monkeypatch):
     src = tmp_path / "src.py"
     src.write_text("eval('x')\n")
     out_file = tmp_path / "report.txt"
-    _run_main([str(src), "--output", str(out_file)], monkeypatch)
+    with pytest.raises(SystemExit) as exc:
+        _run_main([str(src), "--output", str(out_file)], monkeypatch)
+    assert exc.value.code == 1
     assert out_file.exists()
     content = out_file.read_text()
     assert "eval" in content
