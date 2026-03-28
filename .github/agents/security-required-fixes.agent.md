@@ -2,7 +2,6 @@
 description: "Use when reviewing the data ethics tool for security or compliance required fixes. Trigger phrases: security audit, compliance audit, policy risk, legal risk, input validation, unsafe file handling."
 name: "Security Required Fixes Auditor"
 tools: [read, search]
-model: "GPT-5 (copilot)"
 argument-hint: "Scope to review and policy focus, e.g., 'main/reporter only; prioritize input validation and data handling.'"
 user-invocable: true
 disable-model-invocation: false

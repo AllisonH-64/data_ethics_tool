@@ -2,7 +2,6 @@
 description: "Use when auditing the data ethics tool, reviewing Python code quality, or producing a prioritized list of required fixes for the data tool. Trigger phrases: required fixes, fix list, code review, risk audit, regression check, testing gaps."
 name: "Required Fixes Auditor"
 tools: [read, search]
-model: "GPT-5 (copilot)"
 argument-hint: "Scope to review (files, modules, or whole repo) and any constraints (security, tests, docs)."
 user-invocable: true
 disable-model-invocation: false
