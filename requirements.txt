@@ -1,2 +1,5 @@
 # Runtime dependencies
 # No external runtime dependencies are currently required.
+
+# Development / test dependencies
+pytest>=7.0
