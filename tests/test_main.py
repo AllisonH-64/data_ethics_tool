@@ -34,6 +34,46 @@ def test_analysis(tmp_path, capsys):
         sys.argv = sys_argv
 
 
+def test_violations_cause_nonzero_exit(tmp_path, monkeypatch):
+    """main() must exit with code 1 when violations are found."""
+    file = tmp_path / "bad.py"
+    file.write_text("eval('x')\n")
+    with pytest.raises(SystemExit) as exc:
+        _run_main([str(file)], monkeypatch)
+    assert exc.value.code == 1
+
+
+def test_clean_file_exits_zero(tmp_path, monkeypatch):
+    """main() must exit with code 0 when no violations are found."""
+    file = tmp_path / "clean.py"
+    file.write_text("x = 1\n")
+    # Should not raise SystemExit(1)
+    try:
+        _run_main([str(file)], monkeypatch)
+    except SystemExit as exc:
+        assert exc.code == 0
+
+
+def test_nonexistent_path_exits_with_error(monkeypatch, capsys):
+    """main() must exit non-zero and print an error for a nonexistent path."""
+    with pytest.raises(SystemExit) as exc:
+        _run_main(["/nonexistent/path/file.py"], monkeypatch)
+    assert exc.value.code != 0
+    err = capsys.readouterr().err
+    assert "does not exist" in err
+
+
+def test_non_python_file_exits_with_error(tmp_path, monkeypatch, capsys):
+    """main() must exit non-zero when a non-.py file is passed."""
+    csv_file = tmp_path / "data.csv"
+    csv_file.write_text("col1,col2\n1,2\n")
+    with pytest.raises(SystemExit) as exc:
+        _run_main([str(csv_file)], monkeypatch)
+    assert exc.value.code != 0
+    err = capsys.readouterr().err
+    assert "not a Python file" in err
+
+
 def test_analysis_output_format(tmp_path, monkeypatch, capsys):
     """Output must include filename, line number, and message."""
     file = tmp_path / "check.py"
@@ -101,34 +141,30 @@ def test_load_rules_warns_on_import_error(tmp_path, monkeypatch, capsys):
     import importlib
     import pkgutil
 
-    broken_rule = tmp_path / "rule_broken.py"
-    broken_rule.write_text("raise ImportError('intentional')\n")
-
     original_iter = pkgutil.iter_modules
 
     def patched_iter(path):
         yield from original_iter(path)
-        # Inject a fake module name that will fail to import
-        import pkgutil as _pk
         class FakeFinder:
             pass
         yield FakeFinder(), "rule_broken", False
 
     monkeypatch.setattr(pkgutil, "iter_modules", patched_iter)
-    # Point the rules package path to tmp_path so rule_broken is discoverable
-    import rules.loader as rl
-    monkeypatch.setattr(rl, "__package__", "rules")
 
-    import sys as _sys
-    _sys.path.insert(0, str(tmp_path))
-    try:
-        # This will attempt to import 'rules.rule_broken' which won't resolve,
-        # so the WARNING should appear in stderr.
-        loader.load_rules()
-        err = capsys.readouterr().err
-        assert "WARNING" in err
-    finally:
-        _sys.path.remove(str(tmp_path))
+    # Patch importlib.import_module to raise ImportError for the injected module
+    original_import = importlib.import_module
+
+    def patched_import(name, *args, **kwargs):
+        if name == "rules.rule_broken":
+            raise ImportError("intentional")
+        return original_import(name, *args, **kwargs)
+
+    monkeypatch.setattr(importlib, "import_module", patched_import)
+
+    loader.load_rules()
+    err = capsys.readouterr().err
+    assert "WARNING" in err
+    assert "rule_broken" in err
 
 
 def test_load_rules_warns_on_missing_check(tmp_path, monkeypatch, capsys):

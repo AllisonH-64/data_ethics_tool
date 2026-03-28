@@ -27,6 +27,10 @@ def main():
     rules = loader.load_rules()
     reporter = Reporter()
     
+    if not os.path.exists(target):
+        print(f"Error: path '{target}' does not exist.", file=sys.stderr)
+        sys.exit(2)
+
     # Walk through directory or single file
     if os.path.isdir(target):
         for root, _, files in os.walk(target):
@@ -35,6 +39,9 @@ def main():
                     path = os.path.join(root, f)
                     loader.apply_rules(path, rules, reporter)
     else:
+        if not target.endswith(".py"):
+            print(f"Error: '{target}' is not a Python file.", file=sys.stderr)
+            sys.exit(2)
         loader.apply_rules(target, rules, reporter)
 
     report = reporter.generate()
@@ -43,6 +50,9 @@ def main():
             out.write(report)
     else:
         print(report)
+
+    if reporter.issues:
+        sys.exit(1)
 
 
 if __name__ == "__main__":
