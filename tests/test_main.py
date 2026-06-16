@@ -244,3 +244,47 @@ def test_agentic_json_output_is_valid_json(tmp_path, monkeypatch, capsys):
     assert payload["summary"]["total_findings"] == 1
     assert payload["findings"][0]["severity"] in {"high", "medium", "low"}
     assert isinstance(payload["recommended_actions"], list)
+
+
+def test_auto_fix_rewrites_file(tmp_path, monkeypatch):
+    """--auto-fix should rewrite the offending file so the violation is gone."""
+    file = tmp_path / "autofix.py"
+    file.write_text("eval('x')\n")
+    try:
+        _run_main([str(file), "--agentic", "--auto-fix"], monkeypatch)
+    except SystemExit as exc:
+        assert exc.code == 0
+    content = file.read_text()
+    assert "eval(" not in content
+    assert "ETHICS-FIX" in content
+
+
+def test_auto_fix_reports_fixes_applied(tmp_path, monkeypatch, capsys):
+    """--auto-fix output should state how many fixes were applied."""
+    file = tmp_path / "autofix2.py"
+    file.write_text("eval('x')\n")
+    try:
+        _run_main([str(file), "--agentic", "--auto-fix"], monkeypatch)
+    except SystemExit:
+        pass
+    out = capsys.readouterr().out
+    assert "Agent applied" in out
+
+
+def test_auto_fix_writes_run_log(tmp_path, monkeypatch):
+    """--log flag should write a JSON run log with iteration entries."""
+    file = tmp_path / "log_test.py"
+    file.write_text("eval('x')\n")
+    log_file = tmp_path / "run.log.json"
+    try:
+        _run_main(
+            [str(file), "--agentic", "--auto-fix", "--log", str(log_file)],
+            monkeypatch,
+        )
+    except SystemExit:
+        pass
+    assert log_file.exists()
+    log = json.loads(log_file.read_text())
+    assert isinstance(log, list)
+    assert log[0]["iteration"] == 1
+    assert "auto_fixed" in log[0]

@@ -15,6 +15,7 @@ class Finding:
     message: str
     severity: str
     priority_score: int
+    confidence: float  # 0.0 – 1.0; governs auto-fix eligibility
 
 
 class AgenticAnalyzer:
@@ -24,23 +25,23 @@ class AgenticAnalyzer:
         self.goal = goal
         self.max_actions = max(1, max_actions)
 
-    def _classify(self, message: str) -> Tuple[str, int]:
+    def _classify(self, message: str) -> Tuple[str, int, float]:
         lowered = message.lower()
         if "eval" in lowered or "exec" in lowered:
-            return "high", 100
+            return "high", 100, 0.95
         if "hardcoded" in lowered or "secret" in lowered:
-            return "high", 90
+            return "high", 90, 0.90
         if "pii" in lowered or "privacy" in lowered:
-            return "medium", 70
+            return "medium", 70, 0.75
         if "deprecated" in lowered:
-            return "low", 40
-        return "medium", 60
+            return "low", 40, 0.80
+        return "medium", 60, 0.65
 
     def _flatten(self, issues: Dict[str, Iterable[Tuple[int, str]]]) -> List[Finding]:
         findings: List[Finding] = []
         for filename, entries in issues.items():
             for line, message in entries:
-                severity, score = self._classify(message)
+                severity, score, confidence = self._classify(message)
                 findings.append(
                     Finding(
                         filename=filename,
@@ -48,6 +49,7 @@ class AgenticAnalyzer:
                         message=message,
                         severity=severity,
                         priority_score=score,
+                        confidence=confidence,
                     )
                 )
         findings.sort(
@@ -89,6 +91,7 @@ class AgenticAnalyzer:
                         "message": f.message,
                         "severity": f.severity,
                         "priority_score": f.priority_score,
+                        "confidence": f.confidence,
                     }
                     for f in findings
                 ],

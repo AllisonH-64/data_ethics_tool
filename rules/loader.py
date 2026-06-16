@@ -5,6 +5,9 @@ import os
 import pkgutil
 import ast
 import sys
+from collections import namedtuple
+
+Rule = namedtuple("Rule", ["name", "check", "fix", "message"])
 
 
 def load_rules():
@@ -23,7 +26,14 @@ def load_rules():
                 )
                 continue
             if hasattr(module, "check") and callable(module.check):
-                rules.append(module.check)
+                rules.append(
+                    Rule(
+                        name=name,
+                        check=module.check,
+                        fix=getattr(module, "fix", None),
+                        message=getattr(module, "MESSAGE", None),
+                    )
+                )
             else:
                 print(
                     f"WARNING: Rule module '{name}' has no callable 'check' function and will be skipped.",
@@ -48,11 +58,18 @@ def apply_rules(filename, rules, reporter):
             file=sys.stderr,
         )
         return
-    for check in rules:
+    for rule in rules:
+        # Accept both Rule namedtuples and raw callables (backward compat).
+        if hasattr(rule, "check"):
+            check_fn = rule.check
+            rule_label = rule.name
+        else:
+            check_fn = rule
+            rule_label = f"{getattr(rule, '__module__', '?')}.{getattr(rule, '__name__', '?')}"
         try:
-            check(tree, filename, reporter)
+            check_fn(tree, filename, reporter)
         except Exception as exc:
             print(
-                f"WARNING: Rule '{check.__module__}.{check.__name__}' raised an error on '{filename}': {exc}",
+                f"WARNING: Rule '{rule_label}' raised an error on '{filename}': {exc}",
                 file=sys.stderr,
             )
