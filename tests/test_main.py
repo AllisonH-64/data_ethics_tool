@@ -1,5 +1,6 @@
 """Basic tests for the ethics compliance analyzer."""
 
+import json
 import os
 import sys
 
@@ -216,3 +217,30 @@ def test_apply_rules_handles_crashing_rule(tmp_path, capsys):
     err = capsys.readouterr().err
     assert "WARNING" in err
     assert "rule crashed" in err
+
+
+def test_agentic_text_output_contains_prioritization(tmp_path, monkeypatch, capsys):
+    """Agentic mode should include summary, findings, and actions in text format."""
+    file = tmp_path / "agent.py"
+    file.write_text("eval('x')\n")
+    with pytest.raises(SystemExit) as exc:
+        _run_main([str(file), "--agentic"], monkeypatch)
+    assert exc.value.code == 1
+    out = capsys.readouterr().out
+    assert "Agent Goal:" in out
+    assert "Prioritized Findings:" in out
+    assert "Recommended Actions:" in out
+
+
+def test_agentic_json_output_is_valid_json(tmp_path, monkeypatch, capsys):
+    """Agentic mode should emit machine-readable JSON when requested."""
+    file = tmp_path / "agent_json.py"
+    file.write_text("eval('x')\n")
+    with pytest.raises(SystemExit) as exc:
+        _run_main([str(file), "--agentic", "--format", "json"], monkeypatch)
+    assert exc.value.code == 1
+    out = capsys.readouterr().out
+    payload = json.loads(out)
+    assert payload["summary"]["total_findings"] == 1
+    assert payload["findings"][0]["severity"] in {"high", "medium", "low"}
+    assert isinstance(payload["recommended_actions"], list)

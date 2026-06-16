@@ -55,6 +55,18 @@ Save the report to a file:
 python main.py path/to/your_project/ --output report.txt
 ```
 
+Run in agentic mode with prioritized findings and recommended next actions:
+
+```bash
+python main.py path/to/your_project/ --agentic
+```
+
+Emit agentic output as JSON for automation pipelines:
+
+```bash
+python main.py path/to/your_project/ --agentic --format json
+```
+
 ### Exit Codes
 
 - `0`: Scan completed and no violations were found.
