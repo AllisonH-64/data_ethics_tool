@@ -74,6 +74,30 @@ Run the full agent loop and auto-fix high-confidence findings in place:
 python main.py path/to/your_project/ --agentic --auto-fix --log run.log.json
 ```
 
+### Supported Rules
+
+- `eval(...)`: flagged as unsafe dynamic execution and auto-fixed to a review stub comment.
+- `exec(...)`: flagged as unsafe dynamic execution and auto-fixed to a review stub comment.
+- Hardcoded secrets: detects assignments such as `api_key = "..."` and rewrites them to `os.getenv(...)` lookups.
+
+### Auto-Fix Example
+
+Before:
+
+```python
+api_key = "super-secret"
+exec("print('debug')")
+```
+
+After `python main.py path/to/file.py --agentic --auto-fix`:
+
+```python
+import os
+
+api_key = os.getenv("API_KEY", "")
+# ETHICS-FIX: exec removed - replace with explicit allowlisted behavior
+```
+
 ### Exit Codes
 
 - `0`: Scan completed and no violations were found.
@@ -101,7 +125,10 @@ data_ethics_tool/
 ├── rules/
 │   ├── __init__.py
 │   ├── loader.py            # Rule loading and application engine
-│   └── rule_example.py      # Example custom rule
+│   ├── rule_example.py      # eval detection and auto-fix example
+│   ├── rule_exec.py         # exec detection and auto-fix
+│   └── rule_hardcoded_secret.py  # hardcoded secret detection and auto-fix
+├── agent_runner.py          # Perceive -> act -> observe loop for agent mode
 └── tests/
     └── test_main.py         # Unit tests
 ```
