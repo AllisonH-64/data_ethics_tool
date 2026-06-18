@@ -8,6 +8,7 @@ This project helps developers, educators, and organizations ensure that their co
 ## ✨ Features
 
 - **Automated Scanning**: Detects potential ethical and compliance issues in code.
+- **Concrete Risk Rules**: Flags dynamic execution patterns like `eval` and `exec`, plus hardcoded secrets.
 - **Customizable Rulesets**: Extend or modify checks to fit organizational policies.
 - **Clear Reporting**: Generates easy-to-read summaries of infractions with context.
 - **Developer-Friendly**: Simple CLI interface for quick integration into workflows.
@@ -65,6 +66,12 @@ Emit agentic output as JSON for automation pipelines:
 
 ```bash
 python main.py path/to/your_project/ --agentic --format json
+```
+
+Run the full agent loop and auto-fix high-confidence findings in place:
+
+```bash
+python main.py path/to/your_project/ --agentic --auto-fix --log run.log.json
 ```
 
 ### Exit Codes

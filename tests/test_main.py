@@ -288,3 +288,52 @@ def test_auto_fix_writes_run_log(tmp_path, monkeypatch):
     assert isinstance(log, list)
     assert log[0]["iteration"] == 1
     assert "auto_fixed" in log[0]
+
+
+def test_exec_rule_is_reported(tmp_path, monkeypatch, capsys):
+    """exec() should be detected by the new concrete rule."""
+    file = tmp_path / "exec_case.py"
+    file.write_text("exec('print(1)')\n")
+    with pytest.raises(SystemExit) as exc:
+        _run_main([str(file)], monkeypatch)
+    assert exc.value.code == 1
+    out = capsys.readouterr().out
+    assert "Use of exec detected" in out
+
+
+def test_exec_auto_fix_rewrites_file(tmp_path, monkeypatch):
+    """exec() should be auto-fixed into a review stub."""
+    file = tmp_path / "exec_autofix.py"
+    file.write_text("exec('print(1)')\n")
+    try:
+        _run_main([str(file), "--agentic", "--auto-fix"], monkeypatch)
+    except SystemExit as exc:
+        assert exc.code == 0
+    content = file.read_text()
+    assert "exec(" not in content
+    assert "ETHICS-FIX" in content
+
+
+def test_hardcoded_secret_is_reported(tmp_path, monkeypatch, capsys):
+    """Hardcoded secrets should be surfaced by the dedicated rule."""
+    file = tmp_path / "secret_case.py"
+    file.write_text('api_key = "super-secret"\n')
+    with pytest.raises(SystemExit) as exc:
+        _run_main([str(file)], monkeypatch)
+    assert exc.value.code == 1
+    out = capsys.readouterr().out
+    assert "Hardcoded secret detected" in out
+
+
+def test_hardcoded_secret_auto_fix_uses_env_lookup(tmp_path, monkeypatch):
+    """Hardcoded secrets should be rewritten to environment variable lookups."""
+    file = tmp_path / "secret_autofix.py"
+    file.write_text('api_key = "super-secret"\n')
+    try:
+        _run_main([str(file), "--agentic", "--auto-fix"], monkeypatch)
+    except SystemExit as exc:
+        assert exc.code == 0
+    content = file.read_text()
+    assert 'api_key = os.getenv("API_KEY", "")' in content
+    assert "import os" in content
+    assert "super-secret" not in content
