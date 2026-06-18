@@ -138,7 +138,13 @@ data_ethics_tool/
 ## 🧪 Running Tests
 
 ```bash
-.venv\Scripts\python -m pytest tests/
+uv run --with pytest pytest -q
+```
+
+If you are using an activated virtual environment with dependencies installed, this also works:
+
+```bash
+python -m pytest -q
 ```
 
 ---

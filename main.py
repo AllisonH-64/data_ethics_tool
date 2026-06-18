@@ -136,22 +136,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-    if args.agentic:
-        analyzer = AgenticAnalyzer(goal=args.goal, max_actions=args.max_actions)
-        report = analyzer.build_report(reporter.issues, output_format=args.format)
-    else:
-        report = reporter.generate()
-
-    if args.output:
-        with open(args.output, "w") as out:
-            out.write(report)
-    else:
-        print(report)
-
-    if reporter.issues:
-        sys.exit(1)
-
-
-if __name__ == "__main__":
-    main()
