@@ -98,6 +98,34 @@ api_key = os.getenv("API_KEY", "")
 # ETHICS-FIX: exec removed - replace with explicit allowlisted behavior
 ```
 
+### Using as a GitHub Action
+
+This repository is itself a reusable [composite GitHub Action](action.yml). Add it to any
+repository's workflow to scan Python code on every push or pull request, with findings
+shown inline on the diff and summarized on the run:
+
+```yaml
+name: Data Ethics Check
+
+on:
+  pull_request:
+    branches: ["main"]
+
+jobs:
+  ethics-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: AllisonH-64/data_ethics_tool@main
+        with:
+          path: "."              # file or directory to scan (default: ".")
+          fail-on-issues: "true" # fail the check when issues are found (default: "true")
+          max-actions: "5"       # max recommended actions to include (default: "5")
+```
+
+The action exposes `total-findings`, `high`, `medium`, and `low` as outputs for use in
+later steps, e.g. `${{ steps.<step-id>.outputs.total-findings }}`.
+
 ### Exit Codes
 
 - `0`: Scan completed and no violations were found.
@@ -122,6 +150,9 @@ data_ethics_tool/
 ├── reporter.py              # Report generation logic
 ├── requirements.txt         # Python dependencies
 ├── TERMS_AND_CONDITIONS.md  # Usage terms and conditions
+├── action.yml                # GitHub Action definition (composite action)
+├── scripts/
+│   └── annotate.py          # Converts JSON reports into PR annotations/summaries
 ├── rules/
 │   ├── __init__.py
 │   ├── loader.py            # Rule loading and application engine

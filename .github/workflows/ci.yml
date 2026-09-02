@@ -26,3 +26,16 @@ jobs:
 
       - name: Run tests
         run: python -m pytest tests/
+
+  self-test-action:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+
+      - name: Run this repo's own Data Ethics Action against itself
+        uses: ./
+        with:
+          path: "."
+          fail-on-issues: "true"
