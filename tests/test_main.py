@@ -66,15 +66,15 @@ def test_nonexistent_path_exits_with_error(monkeypatch, capsys):
     assert "does not exist" in err
 
 
-def test_non_python_file_exits_with_error(tmp_path, monkeypatch, capsys):
-    """main() must exit non-zero when a non-.py file is passed."""
+def test_unsupported_file_exits_with_error(tmp_path, monkeypatch, capsys):
+    """main() must exit non-zero when an unsupported file type is passed."""
     csv_file = tmp_path / "data.csv"
     csv_file.write_text("col1,col2\n1,2\n")
     with pytest.raises(SystemExit) as exc:
         _run_main([str(csv_file)], monkeypatch)
     assert exc.value.code != 0
     err = capsys.readouterr().err
-    assert "not a Python file" in err
+    assert "not a supported file type" in err
 
 
 def test_analysis_output_format(tmp_path, monkeypatch, capsys):
@@ -323,6 +323,62 @@ def test_hardcoded_secret_is_reported(tmp_path, monkeypatch, capsys):
     assert exc.value.code == 1
     out = capsys.readouterr().out
     assert "Hardcoded secret detected" in out
+
+
+def test_text_file_secret_is_reported(tmp_path, monkeypatch, capsys):
+    """A .env-style file with a real-looking secret should be flagged."""
+    file = tmp_path / "settings.env"
+    file.write_text("DEBUG=true\nAPI_KEY=sk_live_abcdef123456\n")
+    with pytest.raises(SystemExit) as exc:
+        _run_main([str(file)], monkeypatch)
+    assert exc.value.code == 1
+    out = capsys.readouterr().out
+    assert "settings.env" in out
+    assert "Potential secret found in text content" in out
+
+
+def test_text_file_placeholder_is_not_reported(tmp_path, monkeypatch, capsys):
+    """Obvious placeholder values shouldn't be flagged as secrets."""
+    file = tmp_path / "settings.env"
+    file.write_text("API_KEY=changeme\nPASSWORD=<your_password_here>\n")
+    _run_main([str(file)], monkeypatch)
+    out = capsys.readouterr().out.strip()
+    assert out == ""
+
+
+def test_text_file_known_secret_pattern_is_reported(tmp_path, monkeypatch, capsys):
+    """Recognizable secret formats are flagged even without a matching key name."""
+    file = tmp_path / "notes.txt"
+    file.write_text("Leaked key: AKIAABCDEFGHIJKLMNOP\n")
+    with pytest.raises(SystemExit) as exc:
+        _run_main([str(file)], monkeypatch)
+    assert exc.value.code == 1
+    out = capsys.readouterr().out
+    assert "notes.txt" in out
+
+
+def test_directory_traversal_includes_text_files(tmp_path, monkeypatch, capsys):
+    """Directory scans should pick up supported text files alongside .py files."""
+    (tmp_path / "a.py").write_text("eval('a')\n")
+    (tmp_path / "config.env").write_text("SECRET_TOKEN=abcdef123456\n")
+    with pytest.raises(SystemExit) as exc:
+        _run_main([str(tmp_path)], monkeypatch)
+    assert exc.value.code == 1
+    out = capsys.readouterr().out
+    assert "a.py" in out
+    assert "config.env" in out
+
+
+def test_text_file_secret_is_not_auto_fixed(tmp_path, monkeypatch):
+    """Text-file secrets are flagged but left untouched by --auto-fix."""
+    file = tmp_path / "settings.env"
+    original = "API_KEY=sk_live_abcdef123456\n"
+    file.write_text(original)
+    try:
+        _run_main([str(file), "--agentic", "--auto-fix"], monkeypatch)
+    except SystemExit:
+        pass
+    assert file.read_text() == original
 
 
 def test_hardcoded_secret_auto_fix_uses_env_lookup(tmp_path, monkeypatch):

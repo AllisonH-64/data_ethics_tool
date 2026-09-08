@@ -68,7 +68,7 @@ _SKIP_DIRS = {
 
 
 def collect_targets(target: str) -> list:
-    """Return a list of .py file paths to scan under *target*."""
+    """Return a list of .py and supported text file paths to scan under *target*."""
     if os.path.isdir(target):
         targets = []
         for root, dirs, files in os.walk(target):
@@ -77,7 +77,8 @@ def collect_targets(target: str) -> list:
                 if d not in _SKIP_DIRS and not d.endswith(".egg-info")
             ]
             for f in files:
-                if f.endswith(".py"):
+                ext = os.path.splitext(f)[1]
+                if ext == ".py" or ext in loader.TEXT_EXTENSIONS:
                     targets.append(os.path.join(root, f))
         return targets
     return [target]
@@ -92,9 +93,16 @@ def main():
         print(f"Error: path '{target}' does not exist.", file=sys.stderr)
         sys.exit(2)
 
-    if os.path.isfile(target) and not target.endswith(".py"):
-        print(f"Error: '{target}' is not a Python file.", file=sys.stderr)
-        sys.exit(2)
+    if os.path.isfile(target):
+        ext = os.path.splitext(target)[1]
+        if ext != ".py" and ext not in loader.TEXT_EXTENSIONS:
+            supported = ", ".join([".py"] + sorted(loader.TEXT_EXTENSIONS))
+            print(
+                f"Error: '{target}' is not a supported file type "
+                f"(expected one of: {supported}).",
+                file=sys.stderr,
+            )
+            sys.exit(2)
 
     targets = collect_targets(target)
 
@@ -113,14 +121,14 @@ def main():
     elif args.agentic:
         reporter = Reporter()
         for t in targets:
-            loader.apply_rules(t, rules, reporter)
+            loader.apply(t, rules, reporter)
         analyzer = AgenticAnalyzer(goal=args.goal, max_actions=args.max_actions)
         report = analyzer.build_report(reporter.issues, output_format=args.format)
         has_issues = bool(reporter.issues)
     else:
         reporter = Reporter()
         for t in targets:
-            loader.apply_rules(t, rules, reporter)
+            loader.apply(t, rules, reporter)
         report = reporter.generate()
         has_issues = bool(reporter.issues)
 

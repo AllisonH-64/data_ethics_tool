@@ -1,5 +1,9 @@
 # Runtime dependencies
-# No external runtime dependencies are currently required.
+# No external runtime dependencies are currently required for the CLI.
+
+# Web interface (optional)
+streamlit>=1.57
+pandas>=2.2
 
 # Development / test dependencies
 pytest>=7.0

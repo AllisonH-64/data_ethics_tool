@@ -58,7 +58,7 @@ class AgentRunner:
         """Run all rules over *targets* and return (reporter, sorted findings)."""
         reporter = Reporter()
         for target in targets:
-            rule_loader.apply_rules(target, self.rules, reporter)
+            rule_loader.apply(target, self.rules, reporter)
         findings = self.analyzer._flatten(reporter.issues)
         return reporter, findings
 
