@@ -1,0 +1,74 @@
+name: "Data Ethics & Compliance Check"
+description: "Scans Python code for ethics and compliance risks (unsafe eval/exec, hardcoded secrets) and reports findings as PR annotations."
+author: "AllisonH-64"
+branding:
+  icon: "shield"
+  color: "blue"
+
+inputs:
+  path:
+    description: "File or directory to scan, relative to the repository root."
+    required: false
+    default: "."
+  fail-on-issues:
+    description: "Fail the workflow when issues are found."
+    required: false
+    default: "true"
+  max-actions:
+    description: "Maximum number of recommended actions to include in the report."
+    required: false
+    default: "5"
+
+outputs:
+  total-findings:
+    description: "Total number of findings."
+    value: ${{ steps.annotate.outputs.total-findings }}
+  high:
+    description: "Number of high-severity findings."
+    value: ${{ steps.annotate.outputs.high }}
+  medium:
+    description: "Number of medium-severity findings."
+    value: ${{ steps.annotate.outputs.medium }}
+  low:
+    description: "Number of low-severity findings."
+    value: ${{ steps.annotate.outputs.low }}
+
+runs:
+  using: "composite"
+  steps:
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: "3.11"
+
+    - name: Run ethics & compliance scan
+      id: scan
+      shell: bash
+      run: |
+        set +e
+        report_path="${{ runner.temp }}/ethics_report.json"
+        python "${{ github.action_path }}/main.py" "${{ inputs.path }}" \
+          --agentic --format json --max-actions "${{ inputs.max-actions }}" \
+          > "$report_path"
+        exit_code=$?
+        echo "report-path=$report_path" >> "$GITHUB_OUTPUT"
+        echo "exit-code=$exit_code" >> "$GITHUB_OUTPUT"
+
+    - name: Annotate findings and write summary
+      id: annotate
+      shell: bash
+      run: |
+        python "${{ github.action_path }}/scripts/annotate.py" "${{ steps.scan.outputs.report-path }}"
+
+    - name: Enforce result
+      shell: bash
+      run: |
+        exit_code="${{ steps.scan.outputs.exit-code }}"
+        if [ "$exit_code" = "2" ]; then
+          echo "::error::Scan could not run - check the 'path' input."
+          exit 1
+        fi
+        if [ "${{ inputs.fail-on-issues }}" = "true" ] && [ "$exit_code" = "1" ]; then
+          exit 1
+        fi
+        exit 0
