@@ -93,6 +93,7 @@ def render_results(report: dict, fixed_note: str = None):
                 "severity": "Severity",
                 "priority_score": "Priority",
                 "confidence": "Confidence",
+                "suggested_fix": "Suggested fix",
             }
         )
         styled = df.style.apply(
@@ -104,6 +105,7 @@ def render_results(report: dict, fixed_note: str = None):
                 "Confidence": st.column_config.ProgressColumn(
                     "Confidence", min_value=0, max_value=1, format="percent"
                 ),
+                "Suggested fix": st.column_config.TextColumn(width="large"),
                 "Priority": None,
             },
             hide_index=True,

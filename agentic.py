@@ -16,6 +16,7 @@ class Finding:
     severity: str
     priority_score: int
     confidence: float  # 0.0 – 1.0; governs auto-fix eligibility
+    suggested_fix: str  # human-readable remediation guidance for this finding
 
 
 class AgenticAnalyzer:
@@ -37,6 +38,38 @@ class AgenticAnalyzer:
             return "low", 40, 0.80
         return "medium", 60, 0.65
 
+    def _suggest_fix(self, message: str) -> str:
+        """Return human-readable remediation guidance for a finding's message."""
+        lowered = message.lower()
+        if "eval" in lowered:
+            return (
+                "Replace eval(...) with explicit, allowlisted parsing (e.g. "
+                "ast.literal_eval for literals). Auto-fixable with --auto-fix."
+            )
+        if "exec" in lowered:
+            return (
+                "Replace exec(...) with explicit, allowlisted behavior instead "
+                "of running arbitrary code. Auto-fixable with --auto-fix."
+            )
+        if "hardcoded" in lowered:
+            return (
+                "Move this value out of source and load it via os.getenv(...) "
+                "or a secrets manager. Auto-fixable with --auto-fix."
+            )
+        if "text content" in lowered:
+            return (
+                "Remove this value and load it from an environment variable or "
+                "secrets manager instead. Not auto-fixed (config format-specific) "
+                "- edit manually, and make sure this file is in .gitignore if it "
+                "shouldn't be committed."
+            )
+        if "pii" in lowered or "privacy" in lowered:
+            return (
+                "Add data minimization and redaction before this data is "
+                "processed or logged."
+            )
+        return "Review this pattern and add a project-specific mitigation."
+
     def _flatten(self, issues: Dict[str, Iterable[Tuple[int, str]]]) -> List[Finding]:
         findings: List[Finding] = []
         for filename, entries in issues.items():
@@ -50,6 +83,7 @@ class AgenticAnalyzer:
                         severity=severity,
                         priority_score=score,
                         confidence=confidence,
+                        suggested_fix=self._suggest_fix(message),
                     )
                 )
         findings.sort(
@@ -92,6 +126,7 @@ class AgenticAnalyzer:
                         "severity": f.severity,
                         "priority_score": f.priority_score,
                         "confidence": f.confidence,
+                        "suggested_fix": f.suggested_fix,
                     }
                     for f in findings
                 ],
@@ -116,6 +151,7 @@ class AgenticAnalyzer:
             lines.append(
                 f"- [{finding.severity.upper()}] {finding.filename}:{finding.line}: {finding.message}"
             )
+            lines.append(f"    Suggested fix: {finding.suggested_fix}")
 
         lines.append("Recommended Actions:")
         for index, action in enumerate(self._recommend_actions(findings), start=1):
