@@ -1,4 +1,4 @@
-"""Simple web interface for the Data Ethics & Compliance Checker."""
+"""Web interface for the Data Ethics & Compliance Checker."""
 
 import json
 import os
@@ -24,9 +24,32 @@ SEVERITY_COLORS = {
     "medium": "background-color: rgba(249, 115, 22, 0.18)",
     "low": "background-color: rgba(234, 179, 8, 0.18)",
 }
+SEVERITY_HEX = {"high": "#ef4444", "medium": "#f97316", "low": "#eab308"}
 
 SUPPORTED_EXTENSIONS = {".py"} | loader.TEXT_EXTENSIONS
 UPLOAD_TYPES = ["py"] + sorted(ext.lstrip(".") for ext in loader.TEXT_EXTENSIONS)
+
+# Bundled sample files that let a demo run without typing a path first.
+DEMOS = {
+    "demo_dirty_py": {
+        "label": "Risky Python file",
+        "help": "eval(), exec(), and a hardcoded API key.",
+        "path": "sample_dirty_input.py",
+        "icon": ":material/bug_report:",
+    },
+    "demo_dirty_env": {
+        "label": "Risky config file",
+        "help": "A .env with live-looking secrets mixed in with safe placeholders.",
+        "path": "sample_dirty_config.env",
+        "icon": ":material/key_off:",
+    },
+    "demo_clean_py": {
+        "label": "Clean Python file",
+        "help": "The same logic, written without eval() - should come back clean.",
+        "path": "sample_test_input.py",
+        "icon": ":material/verified:",
+    },
+}
 
 
 def clean_path(raw: str) -> str:
@@ -70,6 +93,7 @@ def auto_fix_targets(targets: list, goal: str, max_actions: int, max_iter: int):
 
 def render_results(report: dict, fixed_note: str = None):
     summary = report["summary"]
+
     with st.container(horizontal=True):
         st.metric("Total findings", summary["total_findings"], border=True)
         st.metric("High", summary["high"], border=True)
@@ -82,6 +106,24 @@ def render_results(report: dict, fixed_note: str = None):
     if not report["findings"]:
         st.success("No issues found.", icon=":material/check_circle:")
         return
+
+    sev_df = pd.DataFrame(
+        [
+            {"Severity": label, "Count": summary[key], "Color": SEVERITY_HEX[key]}
+            for key, label in [("high", "High"), ("medium", "Medium"), ("low", "Low")]
+            if summary[key]
+        ]
+    )
+    st.bar_chart(
+        sev_df, x="Severity", y="Count", color="Color", horizontal=True, height=140
+    )
+
+    st.info(
+        "Every finding below traces back to **security & integrity of processing** — "
+        "GDPR Art. 5(1)(f) / Art. 32 and Barbados DPA s. 4(1)(f) / s. 62. "
+        "See *Legal & regulatory basis* above for the full mapping.",
+        icon=":material/gavel:",
+    )
 
     with st.container(border=True):
         st.subheader("Findings")
@@ -128,11 +170,50 @@ st.caption(
     "for hardcoded secrets."
 )
 
+with st.expander(
+    "Legal & regulatory basis for these checks", icon=":material/balance:"
+):
+    st.markdown(
+        """
+Every rule this tool enforces is tied to an actual statutory requirement, not an
+invented convention:
+
+| Rule | Principle | GDPR | Barbados DPA |
+| --- | --- | --- | --- |
+| Hardcoded secrets | Security / integrity & confidentiality | Art. 5(1)(f), Art. 32 | s. 4(1)(f), s. 62 |
+| `eval(...)` | Security / integrity & confidentiality | Art. 5(1)(f), Art. 32 | s. 4(1)(f), s. 62 |
+| `exec(...)` | Security / integrity & confidentiality | Art. 5(1)(f), Art. 32 | s. 4(1)(f), s. 62 |
+| Automated scanning on every push/PR | Accountability | Art. 5(2) | s. 4(2) |
+
+**Not legal advice.** These checks are a narrow, code-level signal — not a substitute
+for a data protection impact assessment or legal review.
+"""
+    )
+
+with st.container(border=True):
+    st.subheader("Quick demo", anchor=False)
+    st.caption("Bundled sample files — one click, no path to type.")
+    demo_cols = st.columns(len(DEMOS))
+    for col, (state_key, demo) in zip(demo_cols, DEMOS.items()):
+        with col:
+            if st.button(
+                demo["label"],
+                key=state_key,
+                icon=demo["icon"],
+                help=demo["help"],
+                width="stretch",
+            ):
+                st.session_state["source_mode"] = "Local path"
+                st.session_state["path_input"] = demo["path"]
+                st.session_state["trigger_scan"] = True
+                st.rerun()
+
 with st.sidebar:
     st.header("Scan target")
     source_mode = st.segmented_control(
         "Source",
         ["Local path", "Upload file", "Paste code"],
+        key="source_mode",
         default="Local path",
     )
 
@@ -187,12 +268,14 @@ elif source_mode == "Paste code":
 else:
     raw_path = st.text_input(
         "Path to file or directory",
+        key="path_input",
         value=".",
         help="Relative to where the app was launched, or an absolute path.",
     )
     path = clean_path(raw_path)
 
 run_clicked = st.button("Run scan", icon=":material/play_arrow:", type="primary")
+run_clicked = run_clicked or st.session_state.pop("trigger_scan", False)
 
 if run_clicked:
     targets = []
