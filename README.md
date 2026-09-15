@@ -3,6 +3,8 @@
 A lightweight tool designed to analyze codebases for **ethical risks** and **compliance infractions**.  
 This project helps developers, educators, and organizations ensure that their code aligns with responsible data practices and regulatory standards.
 
+🔗 **[Live demo](https://dataethicstool-ibplyfkoagidcaoctdqear.streamlit.app)** — try the Quick demo buttons for an instant scan, no setup required.
+
 ---
 
 ## ✨ Features
