@@ -29,6 +29,25 @@ SEVERITY_HEX = {"high": "#ef4444", "medium": "#f97316", "low": "#eab308"}
 SUPPORTED_EXTENSIONS = {".py"} | loader.TEXT_EXTENSIONS
 UPLOAD_TYPES = ["py"] + sorted(ext.lstrip(".") for ext in loader.TEXT_EXTENSIONS)
 
+APP_DIR = os.path.dirname(os.path.abspath(__file__))
+
+
+def _is_hosted() -> bool:
+    """Best-effort detection of Streamlit Community Cloud's runtime.
+
+    Community Cloud always clones the repo under /mount/src/<repo>/, which
+    never happens on a developer's own machine — used to lock down
+    local-path scanning and auto-fix on the public demo, where an
+    arbitrary visitor must not be able to read or rewrite files elsewhere
+    on the shared container.
+    """
+    return APP_DIR.replace("\\", "/").startswith("/mount/src/")
+
+
+def _is_within_app_dir(path: str) -> bool:
+    real = os.path.realpath(path)
+    return real == APP_DIR or real.startswith(APP_DIR + os.sep)
+
 # Bundled sample files that let a demo run without typing a path first.
 DEMOS = {
     "demo_dirty_py": {
@@ -222,13 +241,20 @@ with st.sidebar:
         "Goal", value="Identify and prioritize ethics and compliance risks."
     )
     max_actions = st.slider("Max recommended actions", 1, 10, 5)
-    enable_auto_fix = st.checkbox(
-        "Auto-fix high-confidence findings",
-        help=(
-            "Rewrites matching files in place (eval/exec calls, hardcoded "
-            "secrets). Only applies when scanning a local path."
-        ),
-    )
+    enable_auto_fix = False
+    if _is_hosted():
+        st.caption(
+            "Auto-fix is disabled on the hosted demo — run the app "
+            "locally to try it."
+        )
+    else:
+        enable_auto_fix = st.checkbox(
+            "Auto-fix high-confidence findings",
+            help=(
+                "Rewrites matching files in place (eval/exec calls, hardcoded "
+                "secrets). Only applies when scanning a local path."
+            ),
+        )
     max_iter = 3
     if enable_auto_fix:
         max_iter = st.slider("Max fix iterations", 1, 5, 3)
@@ -285,6 +311,13 @@ if run_clicked:
     if source_mode == "Local path":
         if not path or not os.path.exists(path):
             error = f"Path not found: `{os.path.abspath(path or raw_path)}`"
+        elif _is_hosted() and not _is_within_app_dir(path):
+            error = (
+                "On the hosted demo, local-path scanning is restricted to "
+                "this app's own directory (it's a shared server, not your "
+                "machine). Use **Upload file** or **Paste code** to scan "
+                "your own files instead."
+            )
         elif os.path.isfile(path) and os.path.splitext(path)[1] not in SUPPORTED_EXTENSIONS:
             supported = ", ".join(sorted(SUPPORTED_EXTENSIONS))
             error = f"'{path}' is not a supported file type (expected one of: {supported})."
