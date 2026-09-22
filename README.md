@@ -1,4 +1,4 @@
-🔗 **[Live demo](https://dataethicstool-ibplyfkoagidcaoctdqear.streamlit.app)** — try the Quick demo buttons for an instant scan, no setup required.
+> 🔗 **[Live demo](https://dataethicstool-ibplyfkoagidcaoctdqear.streamlit.app)** — click a Quick demo button for an instant scan, no setup required.
 
 # Data Ethics & Compliance Checker
 
